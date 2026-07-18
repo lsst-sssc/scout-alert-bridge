@@ -87,6 +87,8 @@ if os.environ.get('DB_HOST'):
             'PASSWORD': os.environ.get('DB_PASSWORD', ''),
             'HOST': os.environ['DB_HOST'],
             'PORT': os.environ.get('DB_PORT', '5432'),
+            # e.g. DB_SSLMODE=require for AWS-hosted Postgres (RDS/Aurora)
+            'OPTIONS': {'sslmode': os.environ.get('DB_SSLMODE', 'prefer')},
         }
     }
 else:
