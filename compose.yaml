@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: scout_bridge
+      POSTGRES_USER: scout_bridge
+      POSTGRES_PASSWORD: scout_bridge
+    ports:
+      - '5433:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U scout_bridge']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # One poll cycle against the compose Postgres (mirrors the k8s CronJob).
+  # Usage: docker compose run --rm bridge   (or `up db -d` and run manage.py locally
+  # with DB_HOST=localhost DB_PORT=5433 DB_PASSWORD=scout_bridge)
+  bridge:
+    build: .
+    profiles: ['cycle']
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_HOST: db
+      DB_NAME: scout_bridge
+      DB_USER: scout_bridge
+      DB_PASSWORD: scout_bridge
+      SCOUT_TOPIC_URL: ${SCOUT_TOPIC_URL:-kafka://kafka.scimma.org/lco.scout-neo-too-test}
+      SCIMMA_USERNAME: ${SCIMMA_USERNAME:-}
+      SCIMMA_PASSWORD: ${SCIMMA_PASSWORD:-}
+
+volumes:
+  pgdata:

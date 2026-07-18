@@ -43,6 +43,20 @@ are tracked but never published.
 
 ```sh
 uv venv && uv pip install -e . --group dev
-./manage.py test
+./manage.py test          # SQLite by default
 ruff check .
+```
+
+Against Postgres (as deployed):
+
+```sh
+docker compose up -d db
+export DB_HOST=localhost DB_PORT=5433 DB_PASSWORD=scout_bridge
+./manage.py migrate && ./manage.py bootstrap_scout_query && ./manage.py test
+```
+
+A full containerized poll cycle (build image, migrate, ingest, publish):
+
+```sh
+docker compose run --rm bridge
 ```
