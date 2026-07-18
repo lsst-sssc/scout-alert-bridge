@@ -17,7 +17,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["ruff"]
+dev = ["ruff", "jsonschema"]
 
 [build-system]
 requires = ["hatchling"]

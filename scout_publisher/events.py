@@ -79,6 +79,7 @@ def build_payload(event_type, target, scout_detail, filter_results, changes, iau
         'changes': changes,
         'provenance': {
             'source': 'JPL Scout API',
+            'api_signature': settings.SCOUT_API_VERSION,
             'bridge_version': settings.BRIDGE_VERSION,
             'polled_at': timezone.now().isoformat(),
         },

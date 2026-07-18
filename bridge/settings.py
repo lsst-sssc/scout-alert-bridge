@@ -147,5 +147,6 @@ DATA_SERVICES = {
 SCOUT_TOPIC_URL = os.environ.get('SCOUT_TOPIC_URL', 'kafka://kafka.scimma.org/lco.scout-neo-too-test')
 SCOUT_QUERY_NAME = os.environ.get('SCOUT_QUERY_NAME', 'scout-bridge-broad')
 BRIDGE_VERSION = '0.1.0'
+SCOUT_API_VERSION = '1.3'
 FILTER_CRITERIA_VERSION = 'SSSC-NEO-WG-v0.2'
 SCHEMA_VERSION = '1.0'

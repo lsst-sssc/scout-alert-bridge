@@ -1,0 +1,68 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://github.com/lsst-sssc/scout-alert-bridge/schema/event-1.0.json",
+  "title": "Scout Rubin ToO candidate event",
+  "description": "One event on the Scout NEO ToO Kafka stream. See docs/schema.md.",
+  "type": "object",
+  "required": ["schema_version", "event_type", "event_id", "tdes", "iau_designation",
+               "scout", "filters", "changes", "provenance"],
+  "additionalProperties": false,
+  "properties": {
+    "schema_version": {"const": "1.0"},
+    "event_type": {"enum": ["new_candidate", "updated", "cancelled", "left_neocp"]},
+    "event_id": {"type": "string"},
+    "tdes": {"type": "string", "description": "NEOCP temporary designation (also the Kafka message key)"},
+    "iau_designation": {"type": ["string", "null"]},
+    "scout": {
+      "type": "object",
+      "required": ["last_run"],
+      "additionalProperties": false,
+      "properties": {
+        "last_run": {"type": ["string", "null"], "description": "Scout lastRun timestamp, ISO 8601"},
+        "neo_score": {"type": ["number", "null"]},
+        "neo1km_score": {"type": ["number", "null"]},
+        "pha_score": {"type": ["number", "null"]},
+        "ieo_score": {"type": ["number", "null"]},
+        "geocentric_score": {"type": ["number", "null"]},
+        "impact_rating": {"type": ["integer", "null"], "minimum": 0, "maximum": 4},
+        "rms": {"type": ["number", "null"]},
+        "num_obs": {"type": ["integer", "null"]},
+        "arc_days": {"type": ["number", "null"]},
+        "vmag": {"type": ["number", "null"]},
+        "ra_deg": {"type": ["number", "null"]},
+        "dec_deg": {"type": ["number", "null"]},
+        "rate": {"type": ["number", "null"], "description": "Plane-of-sky motion (arcsec/min)"},
+        "uncertainty_arcmin": {"type": ["number", "null"]},
+        "uncertainty_p1_arcmin": {"type": ["number", "null"]},
+        "ca_dist_ld": {"type": ["number", "null"], "description": "Close-approach distance (lunar distances)"},
+        "h_mag": {"type": ["number", "null"]},
+        "t_ephem": {"type": ["string", "null"]},
+        "url": {"type": "string"}
+      }
+    },
+    "filters": {
+      "type": "object",
+      "required": ["version", "passes", "results"],
+      "additionalProperties": false,
+      "properties": {
+        "version": {"type": "string"},
+        "passes": {"type": "boolean"},
+        "results": {"type": "object", "additionalProperties": {"type": "boolean"}}
+      }
+    },
+    "changes": {
+      "type": "object",
+      "description": "Tracked fields that changed since the previous Scout run: {field: [old, new]}",
+      "additionalProperties": {"type": "array", "minItems": 2, "maxItems": 2}
+    },
+    "provenance": {
+      "type": "object",
+      "required": ["source", "bridge_version", "polled_at"],
+      "properties": {
+        "source": {"type": "string"},
+        "bridge_version": {"type": "string"},
+        "polled_at": {"type": "string"}
+      }
+    }
+  }
+}
