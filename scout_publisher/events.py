@@ -13,6 +13,7 @@ object; objects that never pass the filters generate no events. Pure-ephemeris c
 """
 
 from django.conf import settings
+from django.forms.models import model_to_dict
 from django.utils import timezone
 from tom_jpl.models import ScoutDetailHistory
 
@@ -20,6 +21,23 @@ from .filters import evaluate_filters
 from .models import PublishedEvent
 
 SCOUT_OBJECT_URL = 'https://cneos.jpl.nasa.gov/scout/#/object/'
+
+try:
+    from tom_jpl.models import HISTORY_UNTRACKED_FIELDS
+except ImportError:
+    # tom_jpl PR #23 branch predates the change-detection helpers (local
+    # add-scout-history-display commits); keep in sync until tom-jpl >= 0.3.0.
+    HISTORY_UNTRACKED_FIELDS = {'id', 'target', 'last_run', 'ra', 'dec', 'vmag', 'rate', 't_ephem'}
+
+
+def _row_changes(current, previous):
+    """Tracked-field diff between two history rows; uses ``changes_from`` when available."""
+    if hasattr(current, 'changes_from'):
+        return current.changes_from(previous)
+    old = model_to_dict(previous, fields=[f.name for f in previous._meta.fields])
+    new = model_to_dict(current, fields=[f.name for f in current._meta.fields])
+    return {field: (old[field], value) for field, value in new.items()
+            if field not in HISTORY_UNTRACKED_FIELDS and value != old[field]}
 
 
 def build_payload(event_type, target, scout_detail, filter_results, changes, iau_designation=None):
@@ -72,7 +90,7 @@ def _latest_changes(target):
     rows = list(ScoutDetailHistory.objects.filter(target=target).order_by('-last_run')[:2])
     if len(rows) < 2:
         return {}
-    return rows[0].changes_from(rows[1])
+    return _row_changes(rows[0], rows[1])
 
 
 def _iau_designation(target):

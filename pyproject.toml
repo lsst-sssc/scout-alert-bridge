@@ -9,8 +9,9 @@ authors = [{ name = "Tim Lister", email = "tlister@lco.global" }]
 dependencies = [
     "tomtoolkit>=3.0.0",
     # Needs the Scout history + ingest_scout work, unreleased as of tom-jpl 0.2.0.
-    # Switch to "tom-jpl>=0.3.0" once released to PyPI.
-    "tom-jpl @ git+https://github.com/TOMToolkit/tom_jpl@add-scout-history-display",
+    # Tracks the head branch of https://github.com/TOMToolkit/tom_jpl/pull/23;
+    # switch to "tom-jpl>=0.3.0" once that merges and is released to PyPI.
+    "tom-jpl @ git+https://github.com/TOMToolkit/tom_jpl@add-rubin-too-filter-fields",
     "hop-client>=0.9",
     "psycopg[binary]>=3",
 ]
