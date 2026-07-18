@@ -26,6 +26,10 @@ build-backend = "hatchling.build"
 [tool.hatch.build.targets.wheel]
 packages = ["bridge", "scout_publisher"]
 
+[tool.hatch.metadata]
+# Temporary: the tom-jpl git dependency (PR TOMToolkit/tom_jpl#23); remove with it.
+allow-direct-references = true
+
 [tool.ruff]
 line-length = 120
 target-version = "py311"
