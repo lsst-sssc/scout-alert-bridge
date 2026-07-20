@@ -60,3 +60,28 @@ A full containerized poll cycle (build image, migrate, ingest, publish):
 ```sh
 docker compose run --rm bridge
 ```
+
+### Testing the publish path without real SCiMMA credentials
+
+`hop-client` (and thus `Stream(auth=False)`) works against any Kafka-protocol broker, not
+just Hopskotch — so the actual publish code path (topic-URL parsing, producer, ack/retry)
+can be exercised against a local single-node broker:
+
+```sh
+docker compose --profile localkafka up -d kafka
+# hop's producer expects the topic to already exist (no reliance on broker auto-create):
+docker compose exec kafka /opt/kafka/bin/kafka-topics.sh \
+  --bootstrap-server localhost:9092 --create --topic scout-test --partitions 1 --replication-factor 1
+
+export SCOUT_TOPIC_URL=kafka://localhost:9094/scout-test SCOUT_NO_AUTH=1
+./manage.py publish_scout_events
+
+# verify receipt:
+docker compose exec kafka /opt/kafka/bin/kafka-console-consumer.sh \
+  --bootstrap-server localhost:9092 --topic scout-test --from-beginning
+```
+
+`SCOUT_NO_AUTH=1` makes `_open_stream()` use `Stream(auth=False)` instead of loading (or
+requiring) a SCiMMA credential — local-only, never set it against the real Hopskotch broker.
+This validates everything except SASL auth and the real Hopskotch ACLs/retention, which need
+real credentials (M2).

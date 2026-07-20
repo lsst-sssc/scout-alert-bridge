@@ -95,6 +95,10 @@ class Command(BaseCommand):
         password = os.environ.get('SCIMMA_PASSWORD')
         if username and password:
             stream = Stream(auth=Auth(username, password))
+        elif os.environ.get('SCOUT_NO_AUTH', '').lower() in ('1', 'true', 'yes'):
+            # For local testing against a plaintext broker (e.g. docker compose --profile
+            # localkafka) before real SCiMMA credentials exist.
+            stream = Stream(auth=False)
         else:
             stream = Stream()  # falls back to `hop auth` credentials
         return stream.open(topic, 'w')
