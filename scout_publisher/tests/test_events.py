@@ -109,6 +109,34 @@ class DeriveEventTests(TestCase):
         self.assertEqual(event.event_type, PublishedEvent.EventType.NEW_CANDIDATE)
 
 
+class RelaxedFilterTests(TestCase):
+    def test_strict_mode_ignores_object_failing_only_impact_rating(self):
+        detail = make_candidate(impact_rating=0)
+        self.assertIsNone(derive_event(detail))
+
+    def test_relaxed_mode_admits_object_failing_only_impact_rating(self):
+        from scout_publisher.filters import CORE_FILTER_KEYS
+
+        detail = make_candidate(impact_rating=0)
+        event = derive_event(detail, required_filter_keys=CORE_FILTER_KEYS)
+        self.assertIsNotNone(event)
+        self.assertEqual(event.event_type, PublishedEvent.EventType.NEW_CANDIDATE)
+        # Honest evaluation is preserved even though relaxed mode let it through.
+        self.assertFalse(event.payload['filters']['passes'])
+        self.assertFalse(event.payload['filters']['results']['impact_rating'])
+        self.assertEqual(event.payload['provenance']['filter_mode'], 'relaxed_test')
+
+    def test_strict_mode_stamps_filter_mode_strict(self):
+        event = derive_event(make_candidate())
+        self.assertEqual(event.payload['provenance']['filter_mode'], 'strict')
+
+    def test_relaxed_mode_still_requires_core_filters(self):
+        from scout_publisher.filters import CORE_FILTER_KEYS
+
+        detail = make_candidate(impact_rating=0, neo_score=50)
+        self.assertIsNone(derive_event(detail, required_filter_keys=CORE_FILTER_KEYS))
+
+
 class PublishCommandTests(TestCase):
     def test_dry_run_writes_nothing(self):
         make_candidate()
@@ -116,6 +144,20 @@ class PublishCommandTests(TestCase):
         call_command('publish_scout_events', '--dry-run', stdout=out)
         self.assertIn('new_candidate', out.getvalue())
         self.assertEqual(PublishedEvent.objects.count(), 0)
+
+    def test_relaxed_filters_flag_admits_impact_rating_holdout(self):
+        make_candidate(impact_rating=0)
+        out = StringIO()
+        call_command('publish_scout_events', '--relaxed-filters', '--dry-run', stdout=out)
+        text = out.getvalue()
+        self.assertIn('RELAXED FILTER MODE', text)
+        self.assertIn('new_candidate', text)
+
+    def test_without_relaxed_filters_flag_impact_rating_holdout_derives_nothing(self):
+        make_candidate(impact_rating=0)
+        out = StringIO()
+        call_command('publish_scout_events', '--dry-run', stdout=out)
+        self.assertIn('Dry run: 0 event(s)', out.getvalue())
 
     def test_derive_is_idempotent(self):
         make_candidate()

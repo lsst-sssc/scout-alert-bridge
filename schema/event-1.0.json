@@ -60,8 +60,13 @@
       "required": ["source", "bridge_version", "polled_at"],
       "properties": {
         "source": {"type": "string"},
+        "api_signature": {"type": "string", "description": "Scout API signature.version validated on fetch"},
         "bridge_version": {"type": "string"},
-        "polled_at": {"type": "string"}
+        "polled_at": {"type": "string"},
+        "filter_mode": {
+          "enum": ["strict", "relaxed_test"],
+          "description": "'relaxed_test' means only the identity filters (neo_score, geocentric_score, abs_mag) gated this event - see filters.results for the full, honest per-filter evaluation regardless of this value."
+        }
       }
     }
   }

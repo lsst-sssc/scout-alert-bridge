@@ -45,7 +45,20 @@ plane-of-sky, now / +1 day), `ca_dist_ld` (lunar distances), `h_mag`, `t_ephem`,
 Scout run; empty except on `updated` events.
 
 **`provenance`** — `source` (`"JPL Scout API"`), `api_signature` (Scout API version),
-`bridge_version`, `polled_at`.
+`bridge_version`, `polled_at`, `filter_mode` (`"strict"` or `"relaxed_test"` — see below).
+
+### Relaxed test mode
+
+A real `impact_rating>=3` object is genuinely rare, which makes end-to-end pipeline
+testing against live Scout data impractical under the full filter set. The bridge's
+`publish_scout_events --relaxed-filters` flag gates `new_candidate`/`updated`/`cancelled`
+derivation on only the three identity filters (`neo_score`, `geocentric_score`, `abs_mag`)
+instead of all nine, so a real, live near-Earth object can be pushed through the pipeline
+for isolation testing. **The payload itself never lies about this**: `filters.results` and
+`filters.passes` always report the full, honest evaluation, and
+`provenance.filter_mode: "relaxed_test"` flags any event derived this way. Consumers should
+treat `relaxed_test` events as test traffic, not real Rubin ToO triggers — this flag is
+never used against the production stream.
 
 ## Example
 
@@ -70,8 +83,8 @@ Scout run; empty except on `updated` events.
                  "vmag": true, "unc_p1": true, "rate": true}
   },
   "changes": {},
-  "provenance": {"source": "JPL Scout API", "bridge_version": "0.1.0",
-                  "polled_at": "2026-07-15T10:40:12+00:00"}
+  "provenance": {"source": "JPL Scout API", "api_signature": "1.3", "bridge_version": "0.1.0",
+                  "polled_at": "2026-07-15T10:40:12+00:00", "filter_mode": "strict"}
 }
 ```
 

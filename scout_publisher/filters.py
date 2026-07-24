@@ -74,6 +74,12 @@ def _f_rate(sd, H):
     return sd.rate is not None and sd.rate < RATE_MAX
 
 
+# Identity/plausibility filters kept as hard gates even under a relaxed test run (see
+# publish_scout_events --relaxed-filters): everything else, especially impact_rating, is
+# genuinely rare in real Scout data, which makes end-to-end pipeline testing impractical
+# without waiving it.
+CORE_FILTER_KEYS = ('neo_score', 'geocentric_score', 'abs_mag')
+
 # Ordered (key, human-readable label, predicate) for each Section 2.1 filter.
 RUBIN_TOO_FILTERS = [
     ('neo_score', 'NEO score >= 98', _f_neo_score),

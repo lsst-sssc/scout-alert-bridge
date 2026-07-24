@@ -37,6 +37,14 @@ class SchemaTests(TestCase):
         detail.save()
         validate(derive_event(detail).payload)
 
+    def test_relaxed_test_payload_matches_schema(self):
+        from scout_publisher.filters import CORE_FILTER_KEYS
+
+        detail = make_candidate(impact_rating=0)
+        event = derive_event(detail, required_filter_keys=CORE_FILTER_KEYS)
+        self.assertFalse(event.payload['filters']['passes'])
+        validate(event.payload)
+
 
 class ScoutStatsTests(TestCase):
     def test_stats_output(self):

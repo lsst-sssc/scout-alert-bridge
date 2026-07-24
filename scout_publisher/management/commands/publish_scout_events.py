@@ -18,6 +18,7 @@ from django.utils import timezone
 from tom_jpl.models import ScoutDetail
 
 from scout_publisher.events import derive_event
+from scout_publisher.filters import CORE_FILTER_KEYS
 from scout_publisher.models import PublishedEvent
 
 
@@ -31,9 +32,21 @@ class Command(BaseCommand):
                             help='Kafka topic URL (default: settings.SCOUT_TOPIC_URL).')
         parser.add_argument('--no-publish', action='store_true',
                             help='Write outbox rows but skip the publish phase.')
+        parser.add_argument('--relaxed-filters', action='store_true',
+                            help='TESTING ONLY: gate on neo_score/geocentric_score/abs_mag (H) only, '
+                                 'waiving impact_rating and the other Section 2.1 filters (a real '
+                                 'impact_rating>=3 object is genuinely rare, so this is the only '
+                                 'practical way to exercise a real candidate end-to-end). Payloads '
+                                 'still honestly report the full filter results and are stamped '
+                                 "provenance.filter_mode='relaxed_test'. Never pass this to the "
+                                 'scheduled/production run.')
 
     def handle(self, *args, **options):
-        derived = self._derive(dry_run=options['dry_run'])
+        if options['relaxed_filters']:
+            self.stdout.write(self.style.WARNING(
+                'RELAXED FILTER MODE: gating on neo_score/geocentric_score/abs_mag only. '
+                'For isolation testing against a -test topic - do not use in production.'))
+        derived = self._derive(dry_run=options['dry_run'], relaxed=options['relaxed_filters'])
         if options['dry_run']:
             self.stdout.write(self.style.WARNING(f'Dry run: {derived} event(s) derived, nothing written.'))
             return
@@ -41,10 +54,11 @@ class Command(BaseCommand):
         if not options['no_publish']:
             self._publish(options['topic'])
 
-    def _derive(self, dry_run=False):
+    def _derive(self, dry_run=False, relaxed=False):
+        required_filter_keys = CORE_FILTER_KEYS if relaxed else None
         count = 0
         for scout_detail in ScoutDetail.objects.select_related('target').iterator():
-            event = derive_event(scout_detail)
+            event = derive_event(scout_detail, required_filter_keys=required_filter_keys)
             if event is None:
                 continue
             if dry_run:

@@ -17,8 +17,10 @@ from django.forms.models import model_to_dict
 from django.utils import timezone
 from tom_jpl.models import ScoutDetailHistory
 
-from .filters import evaluate_filters
+from .filters import RUBIN_TOO_FILTERS, evaluate_filters
 from .models import PublishedEvent
+
+ALL_FILTER_KEYS = tuple(key for key, _label, _func in RUBIN_TOO_FILTERS)
 
 SCOUT_OBJECT_URL = 'https://cneos.jpl.nasa.gov/scout/#/object/'
 
@@ -40,7 +42,8 @@ def _row_changes(current, previous):
             if field not in HISTORY_UNTRACKED_FIELDS and value != old[field]}
 
 
-def build_payload(event_type, target, scout_detail, filter_results, changes, iau_designation=None):
+def build_payload(event_type, target, scout_detail, filter_results, changes, iau_designation=None,
+                  filter_mode='strict'):
     sd = scout_detail
     last_run = sd.last_run.isoformat() if sd.last_run else None
     return {
@@ -73,6 +76,8 @@ def build_payload(event_type, target, scout_detail, filter_results, changes, iau
         },
         'filters': {
             'version': settings.FILTER_CRITERIA_VERSION,
+            # Honest full-criteria result regardless of filter_mode - relaxed test runs can
+            # still emit events where this is False (see provenance.filter_mode).
             'passes': all(filter_results.values()),
             'results': filter_results,
         },
@@ -82,6 +87,7 @@ def build_payload(event_type, target, scout_detail, filter_results, changes, iau
             'api_signature': settings.SCOUT_API_VERSION,
             'bridge_version': settings.BRIDGE_VERSION,
             'polled_at': timezone.now().isoformat(),
+            'filter_mode': filter_mode,
         },
     }
 
@@ -99,19 +105,29 @@ def _iau_designation(target):
     return alias.name if alias else None
 
 
-def derive_event(scout_detail):
+def derive_event(scout_detail, required_filter_keys=None):
     """Return an unsaved :class:`PublishedEvent` for this object's current state, or None.
 
     Compares the current Scout state against the object's most recent published event to
     decide which (if any) transition to emit. At most one event is derived per object per
     cycle; multi-step transitions resolve over consecutive cycles.
+
+    ``required_filter_keys``: normally ``None``, meaning a candidate must pass every
+    Section 2.1 filter (see :data:`scout_publisher.filters.RUBIN_TOO_FILTERS`). Pass a
+    reduced key set (e.g. :data:`scout_publisher.filters.CORE_FILTER_KEYS`) to gate on
+    only those filters instead - used by ``publish_scout_events --relaxed-filters`` for
+    isolation testing against real Scout data, since a real ``impact_rating>=3`` object is
+    genuinely rare. The payload's ``filters.results``/``filters.passes`` always reflect the
+    full, honest evaluation regardless of this parameter; only the gating decision changes.
     """
     target = scout_detail.target
     last_event = PublishedEvent.objects.filter(tdes=target.name).order_by('-created', '-pk').first()
     in_set = last_event.in_candidate_set if last_event else False
 
     filter_results = evaluate_filters(scout_detail)
-    passes = all(filter_results.values())
+    gating_keys = required_filter_keys or ALL_FILTER_KEYS
+    filter_mode = 'strict' if required_filter_keys is None else 'relaxed_test'
+    passes = all(filter_results[key] for key in gating_keys)
 
     event_type = None
     changes = {}
@@ -134,7 +150,8 @@ def derive_event(scout_detail):
     if event_type is None:
         return None
 
-    payload = build_payload(event_type, target, scout_detail, filter_results, changes, iau_designation)
+    payload = build_payload(event_type, target, scout_detail, filter_results, changes, iau_designation,
+                            filter_mode=filter_mode)
     return PublishedEvent(
         tdes=target.name,
         last_run=scout_detail.last_run,
