@@ -37,10 +37,8 @@ services:
   # producer, SCOUT_TOPIC_URL parsing, ack/retry logic) before real SCiMMA credentials
   # exist. Not SCiMMA-compatible auth-wise — just the wire protocol.
   # Usage: docker compose --profile localkafka up -d kafka
-  #        SCOUT_TOPIC_URL=kafka://localhost:9094/scout-test SCOUT_NO_AUTH=1 \
-  #          docker compose run --rm -e SCOUT_TOPIC_URL -e SCOUT_NO_AUTH bridge \
-  #          sh -c "python manage.py migrate && python manage.py bootstrap_scout_query && \
-  #                 python manage.py ingest_scout && python manage.py publish_scout_events"
+  #        SCOUT_TOPIC_URL=kafka://kafka:9092/scout-test SCOUT_NO_AUTH=1 \
+  #          docker compose run --rm -e SCOUT_TOPIC_URL -e SCOUT_NO_AUTH bridge
   #        docker compose exec kafka /opt/kafka/bin/kafka-console-consumer.sh \
   #          --bootstrap-server localhost:9092 --topic scout-test --from-beginning
   kafka:

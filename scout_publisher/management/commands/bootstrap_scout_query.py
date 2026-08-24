@@ -17,6 +17,11 @@ class Command(BaseCommand):
         parser.add_argument('--parameters',
                             default=json.dumps(self.BROAD_PARAMETERS),
                             help='JSON dict of Scout query parameters (default: no cuts — the whole list).')
+        parser.add_argument('--print-id', action='store_true',
+                            help="Write only the saved query's numeric id to stdout (progress messages go to "
+                                 "stderr instead), so a poll cycle can feed it straight to `rundataquery`, "
+                                 'which takes an id rather than a name. The id is assigned per-database, so it '
+                                 'differs between dev/staging/prod and cannot be baked into an image or manifest.')
 
     # Deliberately-broad defaults: every ScoutForm key present (the threshold code requires
     # them), all cuts wide open so the whole current Scout list is ingested.
@@ -32,12 +37,17 @@ class Command(BaseCommand):
     }
 
     def handle(self, *args, **options):
+        print_id = options['print_id']
+        # Under --print-id, stdout must carry the bare id and nothing else so the caller can
+        # capture it directly; the human-readable progress goes to stderr.
+        report = self.stderr if print_id else self.stdout
+
         user_model = get_user_model()
         if not user_model.objects.filter(is_superuser=True).exists():
             user = user_model.objects.create_superuser(username='scout_bridge', email='')
             user.set_unusable_password()
             user.save()
-            self.stdout.write(self.style.SUCCESS('Created service superuser "scout_bridge".'))
+            report.write('Created service superuser "scout_bridge".', self.style.SUCCESS)
 
         query, created = DataServiceQuery.objects.get_or_create(
             name=options['name'],
@@ -47,4 +57,7 @@ class Command(BaseCommand):
             },
         )
         verb = 'Created' if created else 'Found existing'
-        self.stdout.write(self.style.SUCCESS(f'{verb} saved Scout query "{query.name}" (id={query.pk}).'))
+        report.write(f'{verb} saved Scout query "{query.name}" (id={query.pk}).', self.style.SUCCESS)
+
+        if print_id:
+            self.stdout.write(str(query.pk))

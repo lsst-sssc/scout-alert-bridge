@@ -16,11 +16,37 @@ outbox. Design and feasibility study:
 ```sh
 ./manage.py migrate
 ./manage.py bootstrap_scout_query          # idempotent: saved broad Scout query + service user
-./manage.py ingest_scout --query-name scout-bridge-broad
+QUERY_ID=$(./manage.py bootstrap_scout_query --print-id)
+./manage.py rundataquery "$QUERY_ID"       # ingest the current Scout candidate list
 ./manage.py publish_scout_events           # --dry-run to preview, --no-publish for outbox only
 ```
 
 Run every 10 minutes (deployed as a Kubernetes CronJob with `concurrencyPolicy: Forbid`).
+
+`rundataquery` (from `tom_dataservices`) identifies a saved query by **numeric id, not
+name**. That id is assigned per-database, so it differs between dev, staging and prod and
+must not be baked into an image or manifest — hence resolving it at runtime from the
+query name with `bootstrap_scout_query --print-id`, which writes the bare id to stdout and
+its progress messages to stderr. Interactively, `./manage.py listqueries` prints a table of
+saved queries and their ids.
+
+### Reconciliation (separate, less frequent)
+
+Retiring candidates that have left Scout — which is what makes `left_neocp` events fire —
+is `tom_jpl`'s `updatescout`, deliberately **not** part of the 10-minute cycle:
+
+```sh
+./manage.py updatescout --skip-designations   # hourly: retire departed candidates
+./manage.py updatescout --skip-reconcile      # daily: promote new IAU designations from the MPC
+```
+
+`updatescout --skip-designations` re-queries Scout **once per active candidate** (rather
+than diffing against one broad query) so that a candidate which merely stops matching a
+narrow query's cuts is never mistaken for one that has actually left. That is the correct
+semantics, but at ~50–100 active candidates it is ~50–100 Scout requests per run — far too
+many to run every 10 minutes against an API whose fair-use policy is one request at a time.
+An object leaving the NEOCP tolerates up to an hour's delay far better than a new candidate
+appearing does, so the two run on separate schedules.
 
 ## Configuration (environment)
 
@@ -54,6 +80,11 @@ docker compose up -d db
 export DB_HOST=localhost DB_PORT=5433 DB_PASSWORD=scout_bridge
 ./manage.py migrate && ./manage.py bootstrap_scout_query && ./manage.py test
 ```
+
+> **Note:** `tom_jpl`'s Scout support is still on the PR #23 branch
+> (`add-rubin-too-filter-fields`), where the old combined `ingest_scout` command was split
+> in review into `rundataquery` (ingest) + `updatescout` (reconcile/designations). Any
+> older notes referring to `ingest_scout --query-name ...` predate that split.
 
 A full containerized poll cycle (build image, migrate, ingest, publish):
 
