@@ -44,7 +44,11 @@ class Command(BaseCommand):
 
         user_model = get_user_model()
         if not user_model.objects.filter(is_superuser=True).exists():
-            user = user_model.objects.create_superuser(username='scout_bridge', email='')
+            user = user_model.objects.create_superuser(
+                username='scout_bridge',
+                email='',
+                password='unused-service-account',
+            )
             user.set_unusable_password()
             user.save()
             report.write('Created service superuser "scout_bridge".', self.style.SUCCESS)
