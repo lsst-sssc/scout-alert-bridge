@@ -13,12 +13,21 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
+      # Pinned to the same uv the Dockerfile builds with, so CI and the image agree.
+      - uses: astral-sh/setup-uv@v10
+        with:
+          version: '0.12.1'
+          enable-cache: true
+      # --frozen installs exactly what uv.lock pins and fails if the lockfile and
+      # pyproject.toml have drifted, rather than quietly re-resolving. The dev group
+      # carries ruff and jsonschema (the latter validates schema/event-1.0.json against
+      # generated payloads); the image excludes it with --no-dev.
       - name: Install
-        run: pip install . ruff jsonschema
+        run: uv sync --frozen --group dev
       - name: Lint
-        run: ruff check .
+        run: uv run --frozen ruff check .
       - name: Test
-        run: python manage.py test
+        run: uv run --frozen python manage.py test
 
   publish-image:
     needs: test
