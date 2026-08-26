@@ -1,19 +1,42 @@
-FROM python:3.12-slim
+# Build stage: resolve dependencies from uv.lock so the image contains exactly the versions
+# the lockfile pins. That matters most for tom-jpl, which is a *branch* reference
+# (PR TOMToolkit/tom_jpl#23) and would otherwise resolve to whatever its head was at build
+# time -- the lock pins the commit instead.
+FROM python:3.12-slim AS builder
 
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1
+COPY --from=ghcr.io/astral-sh/uv:0.12.1 /uv /bin/uv
+
+# copy: the default hardlink mode warns across the cache/venv filesystem boundary.
+# never: use the interpreter already in the image rather than fetching a managed one.
+ENV UV_LINK_MODE=copy \
+    UV_PYTHON_DOWNLOADS=never
 
 WORKDIR /app
 
-COPY pyproject.toml README.md ./
+# git is only needed while the temporary tom-jpl git dependency exists (PR TOMToolkit/tom_jpl#23).
+# It stays in this stage; the runtime stage below never sees it.
+RUN apt-get update && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Dependencies before the project, so the expensive layer stays cached until uv.lock changes.
+COPY pyproject.toml uv.lock README.md ./
+RUN uv sync --frozen --no-dev --no-install-project
+
 COPY bridge ./bridge
 COPY scout_publisher ./scout_publisher
 COPY manage.py ./
+RUN uv sync --frozen --no-dev
 
-# git is only needed while the temporary tom-jpl git dependency exists (PR TOMToolkit/tom_jpl#23)
-RUN apt-get update && apt-get install -y --no-install-recommends git \
-    && pip install --no-cache-dir . \
-    && apt-get purge -y git && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+# Runtime stage: just the interpreter and the built virtualenv -- no uv, no git, no build deps.
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/app/.venv/bin:$PATH"
+
+WORKDIR /app
+
+COPY --from=builder /app /app
 
 # Default: the frequent poll cycle -- ingest new Scout candidates, retire the ones that have
 # left, then derive and publish events.
