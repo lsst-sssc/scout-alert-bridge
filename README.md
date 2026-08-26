@@ -30,23 +30,38 @@ query name with `bootstrap_scout_query --print-id`, which writes the bare id to 
 its progress messages to stderr. Interactively, `./manage.py listqueries` prints a table of
 saved queries and their ids.
 
-### Reconciliation (separate, less frequent)
+### Reconciliation and designations
 
 Retiring candidates that have left Scout — which is what makes `left_neocp` events fire —
-is `tom_jpl`'s `updatescout`, deliberately **not** part of the 10-minute cycle:
+is `tom_jpl`'s `updatescout`. It runs *inside* the 10-minute cycle, between `rundataquery`
+and `publish_scout_events`, so a departure and its event land in the same pass:
 
 ```sh
-./manage.py updatescout --skip-designations   # hourly: retire departed candidates
+./manage.py updatescout --skip-designations   # each cycle: retire departed candidates
 ./manage.py updatescout --skip-reconcile      # daily: promote new IAU designations from the MPC
 ```
 
-`updatescout --skip-designations` re-queries Scout **once per active candidate** (rather
-than diffing against one broad query) so that a candidate which merely stops matching a
-narrow query's cuts is never mistaken for one that has actually left. That is the correct
-semantics, but at ~50–100 active candidates it is ~50–100 Scout requests per run — far too
-many to run every 10 minutes against an API whose fair-use policy is one request at a time.
-An object leaving the NEOCP tolerates up to an hour's delay far better than a new candidate
-appearing does, so the two run on separate schedules.
+Reconciliation costs a **single** Scout request however many candidates we track. Scout
+applies no cuts of its own — the score thresholds are ours, applied client-side — so one
+unconstrained call returns the entire roster, and absence from it unambiguously means the
+object has left. (An earlier version re-queried Scout once per active candidate, ~50–100
+requests per run, on the assumption that a query's cuts were applied server-side. They are
+not; see TOMToolkit/tom_jpl#23.)
+
+The MPC designation pass is what stays on its own schedule. It scrapes the Previous NEOCP
+Objects page and can make throttled per-object fallback lookups, and a new IAU designation
+tolerates a day's delay far better than a new candidate appearing does.
+
+## Checking it works
+
+```sh
+./manage.py publish_scout_events --status   # outbox: pending vs published, recent events
+./manage.py scout_stats                     # per-filter pass counts over the live population
+hop subscribe -s EARLIEST -j $SCOUT_TOPIC_URL   # ground truth, straight off the broker
+```
+
+`docs/Runbook.md` covers these plus the known failure modes — a stuck outbox, migration
+drift, why Hermes shows nothing, and the relaxed/strict filter-mode flap.
 
 ## Configuration (environment)
 
