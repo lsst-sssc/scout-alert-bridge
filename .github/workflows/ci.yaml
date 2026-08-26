@@ -14,7 +14,9 @@ jobs:
         with:
           python-version: '3.12'
       # Pinned to the same uv the Dockerfile builds with, so CI and the image agree.
-      - uses: astral-sh/setup-uv@v10
+      # setup-uv stopped publishing moving major tags after v7, so this pins the full
+      # version -- @v10 does not resolve.
+      - uses: astral-sh/setup-uv@v10.0.1
         with:
           version: '0.12.1'
           enable-cache: true
