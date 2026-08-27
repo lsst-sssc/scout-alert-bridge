@@ -183,6 +183,71 @@ Signature of response from Scout API does not match expected signature. Expected
 Note this contradicts §8 of the feasibility study, which describes a hard stop on signature
 mismatch. The guard is softer than documented.
 
+## Creating a topic on Hopskotch
+
+Needed for `Scout.scout-prod`, for any future replacement topic, and whenever a new
+credential has to reach an existing one. The topic and credential steps are self-serve for
+anyone who is an **Owner** of the SCiMMA group — no SCiMMA-staff involvement required.
+
+### 1. Create the topic
+
+At <https://my.hop.scimma.org/hopauth/> (log in via CILogon): Groups -> **Scout** ->
+*Add Topic*, and enter only the topic part of the name. scimma-admin prepends the owning
+group, so entering `scout-prod` produces `Scout.scout-prod`.
+
+Leave the topic **private** unless it is meant to be world-readable: a public topic can be
+read by any Hopskotch account.
+
+### 2. Grant a credential access to it
+
+Credentials -> *(the credential)* -> *Add Permission* -> pick the topic and the permission.
+
+- The **bridge** needs **Write** only. It never reads the stream back, and a write-only
+  credential cannot be used to snoop other traffic if it leaks.
+- Add **Read** as well to whatever credential you verify with, so `hop subscribe` can
+  confirm delivery without a second credential.
+- **Rubin's consumer** needs **Read** on the production topic, granted to whatever account
+  their ToO Producer authenticates as.
+
+To create a credential in the first place: Credentials -> *Add Credential* -> **Download
+CSV** (the password is displayed only once), then load it locally with
+`hop auth add <file>.csv` and confirm with `hop auth list`.
+
+> **Production should not use a personal credential.** One tied to an individual stops
+> working when they leave or rotate it. Issue a separate service credential with Write on
+> `Scout.scout-prod`, and store it as a sealed-secret in the deploy repo.
+
+### 3. Verify the ACL actually attached
+
+This is the step worth not skipping — a missing permission is silent until a publish fails.
+
+```sh
+hop list-topics kafka://kafka.scimma.org/
+```
+
+The topic appears in the listing only if the credential has access to it. If it is absent,
+the permission did not attach; nothing else will work until it does.
+
+### 4. Verify end to end
+
+Subscribe in one terminal:
+
+```sh
+hop subscribe -s EARLIEST -j kafka://kafka.scimma.org/Scout.scout-test
+```
+
+and publish from another. Against a `-test` topic, `--relaxed-filters` is the practical way
+to get a real candidate through, since a genuine `impact_rating>=3` object is rare — check
+the volume with `--dry-run` first:
+
+```sh
+./manage.py publish_scout_events --relaxed-filters --dry-run
+./manage.py publish_scout_events --relaxed-filters
+```
+
+Messages should appear on the subscriber within a second or two. Note that they will **not**
+appear in Hermes — see "Nothing shows up in Hermes" above.
+
 ## Reference
 
 | Variable | Purpose |
