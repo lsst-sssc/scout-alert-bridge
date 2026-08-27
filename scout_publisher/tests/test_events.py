@@ -136,6 +136,29 @@ class RelaxedFilterTests(TestCase):
         detail = make_candidate(impact_rating=0, neo_score=50)
         self.assertIsNone(derive_event(detail, required_filter_keys=CORE_FILTER_KEYS))
 
+    def test_modes_do_not_flap_against_each_other(self):
+        """Alternating relaxed and strict runs must not oscillate new_candidate/cancelled.
+
+        The two modes ask different questions of the same object, so candidate-set
+        membership is tracked per filter_mode. Sharing it made a relaxed admission look to
+        the next strict run like an object that had stopped passing.
+        """
+        from scout_publisher.filters import CORE_FILTER_KEYS
+
+        # Passes the core filters but fails the full Section 2.1 set.
+        detail = make_candidate(impact_rating=0)
+
+        relaxed = derive_event(detail, required_filter_keys=CORE_FILTER_KEYS)
+        self.assertEqual(relaxed.event_type, PublishedEvent.EventType.NEW_CANDIDATE)
+        relaxed.save()
+
+        # The strict run must not read the relaxed admission as a cancellation.
+        self.assertIsNone(derive_event(detail))
+
+        # And the relaxed lineage still considers the object announced, so it does not
+        # re-announce it either.
+        self.assertIsNone(derive_event(detail, required_filter_keys=CORE_FILTER_KEYS))
+
 
 class PublishCommandTests(TestCase):
     def test_dry_run_writes_nothing(self):

@@ -8,7 +8,8 @@ State machine per object (keyed by NEOCP temporary designation ``tdes``):
 - in candidate set + no longer on Scout (``ScoutDetail.active`` False) -> ``left_neocp``
 
 "in candidate set" is determined from the most recent :class:`PublishedEvent` for the
-object; objects that never pass the filters generate no events. Pure-ephemeris changes
+object *in the same* ``filter_mode``, so that relaxed test runs and strict runs keep
+separate lineages; objects that never pass the filters generate no events. Pure-ephemeris changes
 (``HISTORY_UNTRACKED_FIELDS``) do not generate ``updated`` events.
 """
 
@@ -121,13 +122,21 @@ def derive_event(scout_detail, required_filter_keys=None):
     full, honest evaluation regardless of this parameter; only the gating decision changes.
     """
     target = scout_detail.target
-    last_event = PublishedEvent.objects.filter(tdes=target.name).order_by('-created', '-pk').first()
-    in_set = last_event.in_candidate_set if last_event else False
-
     filter_results = evaluate_filters(scout_detail)
     gating_keys = required_filter_keys or ALL_FILTER_KEYS
     filter_mode = 'strict' if required_filter_keys is None else 'relaxed_test'
     passes = all(filter_results[key] for key in gating_keys)
+
+    # Candidate-set membership is tracked per filter_mode. The two modes ask different
+    # questions of the same object, so a shared history makes them overwrite each other's
+    # answers: a relaxed run admits an object the strict criteria reject, the next strict
+    # run reads that as passing -> failing and emits `cancelled`, the next relaxed run
+    # emits `new_candidate` again, and so on for as long as the modes alternate. Production
+    # only ever runs strict, where this filter matches every row and changes nothing.
+    last_event = (PublishedEvent.objects
+                  .filter(tdes=target.name, payload__provenance__filter_mode=filter_mode)
+                  .order_by('-created', '-pk').first())
+    in_set = last_event.in_candidate_set if last_event else False
 
     event_type = None
     changes = {}

@@ -134,24 +134,25 @@ A topic created in hopauth is not registered with Hermes, so submitting *to* it 
 verify. Getting Hermes visibility needs the Hermes team to add the topic to its ingest
 config *and* to grant Hermes' Hopskotch credential read permission on it.
 
-### Objects flapping between `new_candidate` and `cancelled`
+### Objects flapping between `new_candidate` and `cancelled` (fixed)
 
-Caused by mixing `--relaxed-filters` and strict runs against the same database:
+Historic — `derive_event` now tracks candidate-set membership per `filter_mode`, so relaxed
+and strict runs keep separate lineages. Described here because **outbox history predating
+that fix still contains the artefact**:
 
 ```
 ST26H93  new_candidate  2026-08-25 14:12  relaxed_test
 ST26H93  cancelled      2026-08-25 14:12  strict      <- same last_run
 ```
 
-`derive_event` decides "was this object passing?" from the object's last event regardless of
-`filter_mode`, so a relaxed run marks it passing and the next strict run reads that as
-passing -> failing and emits `cancelled` — at the same `last_run`, since the idempotency key
-does not collide across differing event types. Alternate the two modes and every object
-oscillates forever.
+Membership used to be read from the object's last event regardless of `filter_mode`, so a
+relaxed run admitted an object the strict criteria reject, the next strict run read that as
+passing -> failing and emitted `cancelled`, and the next relaxed run re-announced it. The
+idempotency key `(tdes, last_run, event_type)` does not collide across differing event
+types, so both landed at the same `last_run`. Alternating the modes oscillated forever.
 
-Production only ever runs strict, so the live stream is unaffected, but **outbox history in a
-database that has seen both modes is not a trustworthy record**. Use a scratch database for
-relaxed testing, or filter on `provenance.filter_mode` when reading history.
+Rows from that period are not a trustworthy record of what Scout did. Filter on
+`provenance.filter_mode` when reading history — `--status` shows it per event.
 
 ### Scout returns nothing, or a partial list
 
