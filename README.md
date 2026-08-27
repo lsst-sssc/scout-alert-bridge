@@ -67,7 +67,7 @@ drift, why Hermes shows nothing, and the relaxed/strict filter-mode flap.
 
 | Variable | Purpose | Default |
 |---|---|---|
-| `SCOUT_TOPIC_URL` | Kafka topic URL | `kafka://kafka.scimma.org/lco.scout-neo-too-test` |
+| `SCOUT_TOPIC_URL` | Kafka topic URL | `kafka://kafka.scimma.org/Scout.scout-test` (production sets `Scout.scout-prod`) |
 | `SCIMMA_USERNAME` / `SCIMMA_PASSWORD` | Hopskotch credential (else `hop auth` config) | — |
 | `DB_HOST` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` / `DB_PORT` | Postgres (unset → local SQLite) | — |
 | `SCOUT_QUERY_NAME` | Saved broad query name | `scout-bridge-broad` |

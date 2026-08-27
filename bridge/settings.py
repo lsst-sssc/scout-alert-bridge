@@ -144,7 +144,10 @@ DATA_SERVICES = {
 }
 
 # scout_publisher
-SCOUT_TOPIC_URL = os.environ.get('SCOUT_TOPIC_URL', 'kafka://kafka.scimma.org/lco.scout-neo-too-test')
+# Defaults to the -test topic deliberately: an unset or mistyped SCOUT_TOPIC_URL then
+# publishes somewhere harmless rather than into the stream Rubin consumes. The
+# production deployment sets Scout.scout-prod explicitly, where it is visible in review.
+SCOUT_TOPIC_URL = os.environ.get('SCOUT_TOPIC_URL', 'kafka://kafka.scimma.org/Scout.scout-test')
 SCOUT_QUERY_NAME = os.environ.get('SCOUT_QUERY_NAME', 'scout-bridge-broad')
 BRIDGE_VERSION = '0.1.0'
 SCOUT_API_VERSION = '1.3'

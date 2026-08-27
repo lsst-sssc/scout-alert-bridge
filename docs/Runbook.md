@@ -187,7 +187,7 @@ mismatch. The guard is softer than documented.
 
 | Variable | Purpose |
 |---|---|
-| `SCOUT_TOPIC_URL` | Kafka topic URL. Default is still the stale `kafka://kafka.scimma.org/lco.scout-neo-too-test` |
+| `SCOUT_TOPIC_URL` | Kafka topic URL. Defaults to `kafka://kafka.scimma.org/Scout.scout-test`; production sets `Scout.scout-prod` |
 | `SCIMMA_USERNAME` / `SCIMMA_PASSWORD` | Hopskotch credential; else the `hop auth` store is used |
 | `SCOUT_NO_AUTH=1` | Skip SASL entirely — local plaintext broker only, **never** against kafka.scimma.org |
 | `DB_HOST` / `DB_PORT` / `DB_NAME` / `DB_USER` / `DB_PASSWORD` | Postgres; unset falls back to local SQLite |
