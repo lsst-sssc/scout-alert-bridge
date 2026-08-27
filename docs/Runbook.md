@@ -195,12 +195,43 @@ At <https://my.hop.scimma.org/hopauth/> (log in via CILogon): Groups -> **Scout*
 *Add Topic*, and enter only the topic part of the name. scimma-admin prepends the owning
 group, so entering `scout-prod` produces `Scout.scout-prod`.
 
-Leave the topic **private** unless it is meant to be world-readable: a public topic can be
-read by any Hopskotch account.
+The creation form also asks for **Visibility**, **Archiving** and a partition count. The
+defaults in scimma-admin are `publicly_readable=False`, `archivable=False`,
+`index_archived_text=True`, `n_partitions=2`.
+
+- **Visibility: private.** A public topic is readable by any Hopskotch account. This matters
+  most for `-test` topics, which carry `--relaxed-filters` payloads: those honestly report
+  `"passes": false` but were published anyway, and to a passing reader they look like real
+  Rubin ToO triggers. The production topic is a genuine judgement call — the underlying
+  Scout data is public — but while the NEO trigger criteria await SCOC approval the stream
+  is advisory, so start private. The field is editable, so it can be opened later once the
+  criteria are approved and the schema has settled.
+- **Archiving: on.** SCiMMA keeps archived messages beyond Kafka's retention window, which
+  is what gives a browsable history of what was actually published — useful for the weekly
+  digest, and an independent record that does not depend on the bridge's own outbox. Leave
+  `index_archived_text` at its default so messages are searchable by `tdes`. Note archived
+  messages are durable and outside our control: anything published is on the record.
+- **Partitions: 1.** Kafka guarantees ordering only *within* a partition. The publisher keys
+  every message by `tdes`, so an object's events hash to one partition and stay ordered even
+  with several — but a stream measured in messages per hour gains nothing from parallelism,
+  and a single partition makes ordering unconditional rather than dependent on the key being
+  set correctly.
 
 ### 2. Grant a credential access to it
 
-Credentials -> *(the credential)* -> *Add Permission* -> pick the topic and the permission.
+Permissions are granted to **groups**, not to individual credentials: the topic page's
+*Available Permissions* table lists groups with Read/Write buttons, and a credential can
+only ever derive a subset of what its group already holds
+(`CredentialKafkaPermission.parent` points at a `GroupKafkaPermission`). The owning group —
+`Scout` — shows as `All (Owner)` and needs nothing added.
+
+So a consumer at another institution does not have to tell us what credential they use. We
+grant their *group* Read, and their members mint their own credentials against it. Rubin
+already has `rubin` and `rubin-too-dev` groups visible in that table; confirm with them
+which one actually runs the ToO Producer before granting on the production topic.
+
+To give one of your own credentials access: Credentials -> *(the credential)* ->
+*Add Permission* -> pick the topic and the permission.
 
 - The **bridge** needs **Write** only. It never reads the stream back, and a write-only
   credential cannot be used to snoop other traffic if it leaks.

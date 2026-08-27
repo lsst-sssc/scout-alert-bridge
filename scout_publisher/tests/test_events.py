@@ -1,6 +1,7 @@
 from datetime import datetime, timedelta
 from datetime import timezone as dt_timezone
 from io import StringIO
+from unittest.mock import patch
 
 from django.core.management import call_command
 from django.test import TestCase
@@ -188,3 +189,46 @@ class PublishCommandTests(TestCase):
         call_command('publish_scout_events', '--no-publish', stdout=out)
         call_command('publish_scout_events', '--no-publish', stdout=out)
         self.assertEqual(PublishedEvent.objects.count(), 1)
+
+
+class PublishToBrokerTests(TestCase):
+    """Exercise the publish phase with a stand-in for the Kafka producer."""
+
+    class FakeStream:
+        def __init__(self):
+            self.writes = []
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc_info):
+            return False
+
+        def write(self, message, key=None):
+            self.writes.append((message, key))
+
+        def flush(self):
+            pass
+
+    def _publish_with_fake_stream(self, *args):
+        from scout_publisher.management.commands.publish_scout_events import Command
+
+        stream = self.FakeStream()
+        with patch.object(Command, '_open_stream', return_value=stream):
+            call_command('publish_scout_events', *args, stdout=StringIO())
+        return stream
+
+    def test_message_is_keyed_by_tdes(self):
+        """Kafka orders only within a partition, so events for one object must share a key."""
+        make_candidate(name='P12keyed')
+        stream = self._publish_with_fake_stream()
+
+        self.assertEqual(len(stream.writes), 1)
+        message, key = stream.writes[0]
+        self.assertEqual(key, 'P12keyed')
+        self.assertEqual(message['tdes'], 'P12keyed')
+
+    def test_published_rows_are_stamped(self):
+        make_candidate()
+        self._publish_with_fake_stream()
+        self.assertEqual(PublishedEvent.objects.filter(published_at__isnull=True).count(), 0)

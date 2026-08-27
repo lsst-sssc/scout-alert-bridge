@@ -145,7 +145,10 @@ class Command(BaseCommand):
         with stream as s:
             for event in pending:
                 try:
-                    s.write(event.payload)
+                    # Key by tdes so every event for one object lands on the same partition:
+                    # Kafka orders messages only within a partition, so an unkeyed stream can
+                    # deliver an object's `cancelled` ahead of the `new_candidate` it follows.
+                    s.write(event.payload, key=event.tdes)
                     s.flush()
                 except Exception as exc:
                     self.stdout.write(self.style.ERROR(f'Publish failed for {event}: {exc}; will retry.'))
