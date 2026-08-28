@@ -11,10 +11,14 @@ State machine per object (keyed by NEOCP temporary designation ``tdes``):
 object *in the same* ``filter_mode``, so that relaxed test runs and strict runs keep
 separate lineages; objects that never pass the filters generate no events. Pure-ephemeris changes
 (``HISTORY_UNTRACKED_FIELDS``) do not generate ``updated`` events.
+
+``updatescout``'s MPC pass renames a designated Target to its IAU designation (the trksub
+survives as an alias), and an object can be designated while still active on Scout — so
+the previous event is looked up under *every* name the target has carried, and the trksub
+that keyed the lineage stays the ``tdes`` (and Kafka message key) for the rest of it.
 """
 
 from django.conf import settings
-from django.forms.models import model_to_dict
 from django.utils import timezone
 from tom_jpl.models import ScoutDetailHistory
 
@@ -25,33 +29,16 @@ ALL_FILTER_KEYS = tuple(key for key, _label, _func in RUBIN_TOO_FILTERS)
 
 SCOUT_OBJECT_URL = 'https://cneos.jpl.nasa.gov/scout/#/object/'
 
-try:
-    from tom_jpl.models import HISTORY_UNTRACKED_FIELDS
-except ImportError:
-    # tom_jpl PR #23 branch predates the change-detection helpers (local
-    # add-scout-history-display commits); keep in sync until tom-jpl >= 0.3.0.
-    HISTORY_UNTRACKED_FIELDS = {'id', 'target', 'last_run', 'ra', 'dec', 'vmag', 'rate', 't_ephem'}
 
-
-def _row_changes(current, previous):
-    """Tracked-field diff between two history rows; uses ``changes_from`` when available."""
-    if hasattr(current, 'changes_from'):
-        return current.changes_from(previous)
-    old = model_to_dict(previous, fields=[f.name for f in previous._meta.fields])
-    new = model_to_dict(current, fields=[f.name for f in current._meta.fields])
-    return {field: (old[field], value) for field, value in new.items()
-            if field not in HISTORY_UNTRACKED_FIELDS and value != old[field]}
-
-
-def build_payload(event_type, target, scout_detail, filter_results, changes, iau_designation=None,
+def build_payload(event_type, tdes, scout_detail, filter_results, changes, iau_designation=None,
                   filter_mode='strict'):
     sd = scout_detail
     last_run = sd.last_run.isoformat() if sd.last_run else None
     return {
         'schema_version': settings.SCHEMA_VERSION,
         'event_type': event_type,
-        'event_id': f'{target.name}:{last_run}:{event_type}',
-        'tdes': target.name,
+        'event_id': f'{tdes}:{last_run}:{event_type}',
+        'tdes': tdes,
         'iau_designation': iau_designation,
         'scout': {
             'last_run': last_run,
@@ -71,10 +58,12 @@ def build_payload(event_type, target, scout_detail, filter_results, changes, iau
             'uncertainty_arcmin': sd.uncertainty,
             'uncertainty_p1_arcmin': sd.uncertainty_p1,
             'ca_dist_ld': sd.ca_dist,
-            'h_mag': getattr(target, 'abs_mag', None),
+            'h_mag': getattr(sd.target, 'abs_mag', None),
             't_ephem': sd.t_ephem.isoformat() if sd.t_ephem else None,
-            'url': SCOUT_OBJECT_URL + target.name,
+            'url': SCOUT_OBJECT_URL + tdes,
         },
+        'mpc_status': sd.mpc_status,
+        'mpc_reference': sd.mpc_reference,
         'filters': {
             'version': settings.FILTER_CRITERIA_VERSION,
             # Honest full-criteria result regardless of filter_mode - relaxed test runs can
@@ -98,12 +87,21 @@ def _latest_changes(target):
     rows = list(ScoutDetailHistory.objects.filter(target=target).order_by('-last_run')[:2])
     if len(rows) < 2:
         return {}
-    return _row_changes(rows[0], rows[1])
+    return rows[0].changes_from(rows[1])
 
 
-def _iau_designation(target):
-    alias = target.aliases.first() if hasattr(target, 'aliases') else None
-    return alias.name if alias else None
+def _iau_designation(scout_detail, tdes):
+    """The IAU designation once ``updatescout``'s MPC pass has settled it, else None.
+
+    A designated object's Target *is* renamed to the designation (trksub kept as an
+    alias), so a primary name differing from the lineage's trksub is the designation. A
+    submission the MPC folded into another object carries its surviving identity in
+    ``merged_into`` instead — names are never copied onto the retired Target.
+    """
+    if scout_detail.merged_into:
+        return scout_detail.merged_into
+    name = scout_detail.target.name
+    return name if name != tdes else None
 
 
 def derive_event(scout_detail, required_filter_keys=None):
@@ -133,10 +131,16 @@ def derive_event(scout_detail, required_filter_keys=None):
     # run reads that as passing -> failing and emits `cancelled`, the next relaxed run
     # emits `new_candidate` again, and so on for as long as the modes alternate. Production
     # only ever runs strict, where this filter matches every row and changes nothing.
+    #
+    # Matched under every name the target has carried: `updatescout` renames a designated
+    # Target to its IAU designation (possibly while it is still active on Scout), and the
+    # lineage must survive the rename rather than restart under the new name.
+    names = [target.name] + [alias.name for alias in target.aliases.all()]
     last_event = (PublishedEvent.objects
-                  .filter(tdes=target.name, payload__provenance__filter_mode=filter_mode)
+                  .filter(tdes__in=names, payload__provenance__filter_mode=filter_mode)
                   .order_by('-created', '-pk').first())
     in_set = last_event.in_candidate_set if last_event else False
+    tdes = last_event.tdes if last_event else target.name
 
     event_type = None
     changes = {}
@@ -145,7 +149,7 @@ def derive_event(scout_detail, required_filter_keys=None):
     if not scout_detail.active:
         if in_set:
             event_type = PublishedEvent.EventType.LEFT_NEOCP
-            iau_designation = _iau_designation(target)
+            iau_designation = _iau_designation(scout_detail, tdes)
     elif passes and not in_set:
         event_type = PublishedEvent.EventType.NEW_CANDIDATE
     elif passes and in_set:
@@ -159,10 +163,10 @@ def derive_event(scout_detail, required_filter_keys=None):
     if event_type is None:
         return None
 
-    payload = build_payload(event_type, target, scout_detail, filter_results, changes, iau_designation,
+    payload = build_payload(event_type, tdes, scout_detail, filter_results, changes, iau_designation,
                             filter_mode=filter_mode)
     return PublishedEvent(
-        tdes=target.name,
+        tdes=tdes,
         last_run=scout_detail.last_run,
         event_type=event_type,
         payload=payload,

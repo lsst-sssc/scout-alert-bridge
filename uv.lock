@@ -2488,8 +2488,8 @@ wheels = [
 
 [[package]]
 name = "tom-jpl"
-version = "0.2.0.post32.dev0+c883686"
-source = { git = "https://github.com/TOMToolkit/tom_jpl?rev=add-rubin-too-filter-fields#c88368677c55145206daec24c75821981c0eb23e" }
+version = "0.2.0.post45.dev0+e2602fa"
+source = { git = "https://github.com/TOMToolkit/tom_jpl?rev=add-rubin-too-filter-fields#e2602fa0a7e9dc125e1a4255ff9d3af03688d96b" }
 dependencies = [
     { name = "tomtoolkit" },
 ]

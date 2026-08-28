@@ -95,6 +95,56 @@ class DeriveEventTests(TestCase):
         event = derive_event(detail)
         self.assertIsNotNone(event)
         self.assertEqual(event.event_type, PublishedEvent.EventType.LEFT_NEOCP)
+        self.assertIsNone(event.payload['iau_designation'])
+        self.assertIsNone(event.payload['mpc_status'])
+
+    def rename_to_designation(self, detail, designation):
+        """Simulate updatescout's MPC pass: rename the Target, alias the trksub."""
+        target = detail.target
+        trksub = target.name
+        target.name = designation
+        target.save()
+        target.aliases.create(name=trksub)
+        detail.mpc_status = 'designated'
+        detail.mpc_reference = 'MPEC 2026-Q53'
+        detail.save()
+
+    def test_lineage_survives_iau_rename(self):
+        # updatescout can rename a still-active candidate to its IAU designation; the
+        # event lineage (and Kafka key) must stay on the trksub, not restart.
+        detail = make_candidate()
+        record_event(detail, PublishedEvent.EventType.NEW_CANDIDATE)
+        self.rename_to_designation(detail, '2026 QQ1')
+        detail.active = False
+        detail.save()
+        event = derive_event(detail)
+        self.assertIsNotNone(event)
+        self.assertEqual(event.event_type, PublishedEvent.EventType.LEFT_NEOCP)
+        self.assertEqual(event.tdes, 'P12test')
+        self.assertEqual(event.payload['tdes'], 'P12test')
+        self.assertEqual(event.payload['iau_designation'], '2026 QQ1')
+        self.assertEqual(event.payload['mpc_status'], 'designated')
+        self.assertEqual(event.payload['mpc_reference'], 'MPEC 2026-Q53')
+
+    def test_no_new_candidate_after_rename_of_tracked_object(self):
+        # A renamed, still-passing, still-active candidate must not restart its lineage
+        # with a second new_candidate under the designation.
+        detail = make_candidate()
+        record_event(detail, PublishedEvent.EventType.NEW_CANDIDATE)
+        self.rename_to_designation(detail, '2026 QQ1')
+        self.assertIsNone(derive_event(detail))
+
+    def test_left_neocp_merged_submission_reports_survivor(self):
+        detail = make_candidate()
+        record_event(detail, PublishedEvent.EventType.NEW_CANDIDATE)
+        detail.active = False
+        detail.mpc_status = 'designated'
+        detail.merged_into = '2026 QQ2'
+        detail.save()
+        event = derive_event(detail)
+        self.assertEqual(event.event_type, PublishedEvent.EventType.LEFT_NEOCP)
+        self.assertEqual(event.payload['tdes'], 'P12test')
+        self.assertEqual(event.payload['iau_designation'], '2026 QQ2')
 
     def test_no_event_when_departed_but_never_candidate(self):
         detail = make_candidate(active=False, neo_score=50)

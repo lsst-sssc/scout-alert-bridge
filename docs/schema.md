@@ -21,12 +21,16 @@ Machine-readable version: [`schema/event-1.0.json`](../schema/event-1.0.json)
 | `new_candidate` | Object passes **all** SSSC §2.1 filters (first time, or again after leaving the set) |
 | `updated` | In-set object recomputed by Scout with tracked-field changes (pure ephemeris churn — ra/dec/vmag/rate/t_ephem — is suppressed) |
 | `cancelled` | In-set object no longer passes ≥1 filter (SSSC §2.3) but is still on Scout |
-| `left_neocp` | In-set object left the Scout list (designated / removed / impacted); `iau_designation` carries the IAU provisional designation when the MPC has assigned one |
+| `left_neocp` | In-set object left the Scout list (designated / removed / impacted); `iau_designation` carries the IAU provisional designation when the MPC has assigned one (via `updatescout`'s daily MPC pass, so a `left_neocp` emitted before that pass carries `null`), and `mpc_status`/`mpc_reference` record why it left and the announcing publication |
 
 ## Fields
 
 Top level: `schema_version` (`"1.0"`), `event_type`, `event_id`, `tdes`,
-`iau_designation` (nullable), `scout`, `filters`, `changes`, `provenance`.
+`iau_designation` (nullable), `mpc_status` (nullable; one of `designated`, `lost`,
+`dne`, `na`, `ns` per tom_jpl's `MPC_STATUSES`), `mpc_reference` (nullable, e.g.
+`"MPEC 2026-Q53"`), `scout`, `filters`, `changes`, `provenance`. The `tdes` is always
+the NEOCP trksub that started the lineage, even after the Target is renamed to its
+IAU designation.
 
 **`scout`** — the Scout snapshot the event derives from. All values nullable
 (Scout omits fields for poorly constrained objects): `last_run` (ISO 8601),
@@ -69,6 +73,8 @@ never used against the production stream.
   "event_id": "P12abcd:2026-07-15T10:31:00+00:00:new_candidate",
   "tdes": "P12abcd",
   "iau_designation": null,
+  "mpc_status": null,
+  "mpc_reference": null,
   "scout": {
     "last_run": "2026-07-15T10:31:00+00:00", "neo_score": 100,
     "geocentric_score": 0, "impact_rating": 3, "rms": 0.4, "num_obs": 12,

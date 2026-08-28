@@ -1,6 +1,6 @@
 """Derive Rubin ToO candidate events from the current Scout state and publish them.
 
-Runs after ``ingest_scout`` in each poll cycle. Two phases:
+Runs after ``rundataquery`` + ``updatescout --skip-designations`` in each poll cycle. Two phases:
 
 1. Derive: for every :class:`tom_jpl.models.ScoutDetail`, compute the state transition
    (if any) against the object's most recent published event and write an outbox row.

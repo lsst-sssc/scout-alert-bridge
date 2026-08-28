@@ -5,7 +5,7 @@
   "description": "One event on the Scout NEO ToO Kafka stream. See docs/schema.md.",
   "type": "object",
   "required": ["schema_version", "event_type", "event_id", "tdes", "iau_designation",
-               "scout", "filters", "changes", "provenance"],
+               "mpc_status", "mpc_reference", "scout", "filters", "changes", "provenance"],
   "additionalProperties": false,
   "properties": {
     "schema_version": {"const": "1.0"},
@@ -13,6 +13,14 @@
     "event_id": {"type": "string"},
     "tdes": {"type": "string", "description": "NEOCP temporary designation (also the Kafka message key)"},
     "iau_designation": {"type": ["string", "null"]},
+    "mpc_status": {
+      "enum": ["designated", "lost", "dne", "na", "ns", null],
+      "description": "Why the object left the NEOCP, per the MPC's Previous NEOCP Objects page (tom_jpl MPC_STATUSES); null until the daily MPC pass settles it"
+    },
+    "mpc_reference": {
+      "type": ["string", "null"],
+      "description": "Publication announcing the mpc_status outcome (e.g. 'MPEC 2026-Q53')"
+    },
     "scout": {
       "type": "object",
       "required": ["last_run"],

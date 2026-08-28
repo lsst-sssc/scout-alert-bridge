@@ -1,7 +1,8 @@
 """Django settings for the scout-alert-bridge service.
 
-A headless TOM Toolkit project: `tom_jpl` provides Scout ingestion (via its
-`ingest_scout` management command) and `scout_publisher` derives and publishes
+A headless TOM Toolkit project: Scout candidates are ingested via tom_dataservices'
+`rundataquery` (with a saved broad query) and reconciled/settled by `tom_jpl`'s
+`updatescout`; `scout_publisher` derives and publishes
 Rubin ToO candidate events to Kafka. The only web surface is the Django admin,
 used for operational inspection.
 """

@@ -1,4 +1,4 @@
-"""Idempotently create the saved broad Scout query and service user that ``ingest_scout`` needs."""
+"""Idempotently create the saved broad Scout query and service user that ``rundataquery`` needs."""
 
 import json
 
