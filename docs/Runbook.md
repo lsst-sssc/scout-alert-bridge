@@ -230,6 +230,17 @@ grant their *group* Read, and their members mint their own credentials against i
 already has `rubin` and `rubin-too-dev` groups visible in that table; confirm with them
 which one actually runs the ToO Producer before granting on the production topic.
 
+**Grants in effect** (update this list when the ACLs change):
+
+| Date | Group | Topic | Permission |
+|---|---|---|---|
+| 2026-08-31 | `rubin-too-dev` | `Scout.scout-test` | Read |
+
+`Scout.scout-test` also carries `--relaxed-filters` traffic (stamped
+`provenance.filter_mode='relaxed_test'`), so its readers must not treat messages as real
+triggers without checking `filters.passes`. No grants exist yet on `scout-prod`; that one
+waits on confirming which group Rubin's production ToO Producer authenticates as.
+
 To give one of your own credentials access: Credentials -> *(the credential)* ->
 *Add Permission* -> pick the topic and the permission.
 
