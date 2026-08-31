@@ -115,7 +115,12 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_ROOT = BASE_DIR / 'data'
 MEDIA_URL = '/data/'
 
-DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+# AutoField, not Django's BigAutoField default: tom_base's apps ship migrations built
+# under AutoField and don't declare default_auto_field of their own, so a BigAutoField
+# project setting leaves them permanently "changed but unmigrated" -- unfixable, as the
+# migrations would have to be written into site-packages. Matches tom_setup's own
+# settings template. Our apps pin BigAutoField in their AppConfigs and are unaffected.
+DEFAULT_AUTO_FIELD = 'django.db.models.AutoField'
 
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
 
