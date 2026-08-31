@@ -1,0 +1,16 @@
+  Superseded 2026-08-24: Chris's Aug 5 email already gave the topic names (scout-prod /
+  scout-test), and checking my.hop.scimma.org/hopauth directly showed I'm already Owner
+  of the Scout group there — so topic creation and write credentials turn out to be
+  self-serve on our side (scimma-admin's create_topic flow only requires group-Owner
+  status, not a SCiMMA-staff action). No need to ask Chris for either. Revised reply,
+  just to close the loop on the one piece we can't self-serve — Rubin's read side:
+
+  ▎ Thanks for the topic names — turns out I already have Owner access on the Scout group
+  ▎ at my.hop.scimma.org/hopauth, so we're able to create scout-prod/scout-test and
+  ▎ generate our own write credentials directly, no need to trouble you for those. We'll
+  ▎ run the isolation test against scout-test on our end first and report back.
+  ▎
+  ▎ One thing we do need from your side: what group/account will Rubin's ToO Producer be
+  ▎ authenticating as, so we can grant it read permission on scout-prod once we're ready
+  ▎ for the joint check?
+
