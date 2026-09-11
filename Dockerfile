@@ -1,7 +1,5 @@
 # Build stage: resolve dependencies from uv.lock so the image contains exactly the versions
-# the lockfile pins. That matters most for tom-jpl, which is a *branch* reference
-# (PR TOMToolkit/tom_jpl#23) and would otherwise resolve to whatever its head was at build
-# time -- the lock pins the commit instead.
+# the lockfile pins.
 FROM python:3.12-slim AS builder
 
 COPY --from=ghcr.io/astral-sh/uv:0.12.1 /uv /bin/uv
@@ -13,11 +11,6 @@ ENV UV_LINK_MODE=copy \
 
 WORKDIR /app
 
-# git is only needed while the temporary tom-jpl git dependency exists (PR TOMToolkit/tom_jpl#23).
-# It stays in this stage; the runtime stage below never sees it.
-RUN apt-get update && apt-get install -y --no-install-recommends git \
-    && rm -rf /var/lib/apt/lists/*
-
 # Dependencies before the project, so the expensive layer stays cached until uv.lock changes.
 COPY pyproject.toml uv.lock README.md ./
 RUN uv sync --frozen --no-dev --no-install-project
@@ -27,7 +20,7 @@ COPY scout_publisher ./scout_publisher
 COPY manage.py ./
 RUN uv sync --frozen --no-dev
 
-# Runtime stage: just the interpreter and the built virtualenv -- no uv, no git, no build deps.
+# Runtime stage: just the interpreter and the built virtualenv -- no uv, no build deps.
 FROM python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1 \

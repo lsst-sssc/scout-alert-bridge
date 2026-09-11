@@ -2372,8 +2372,8 @@ dev = [
 requires-dist = [
     { name = "hop-client", specifier = ">=0.9" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3" },
-    { name = "tom-jpl", git = "https://github.com/TOMToolkit/tom_jpl?rev=add-rubin-too-filter-fields" },
-    { name = "tomtoolkit", specifier = ">=3.0.0" },
+    { name = "tom-jpl", specifier = ">=0.3.0" },
+    { name = "tomtoolkit", specifier = ">=3.0.1" },
 ]
 
 [package.metadata.requires-dev]
@@ -2488,10 +2488,14 @@ wheels = [
 
 [[package]]
 name = "tom-jpl"
-version = "0.2.0.post45.dev0+e2602fa"
-source = { git = "https://github.com/TOMToolkit/tom_jpl?rev=add-rubin-too-filter-fields#e2602fa0a7e9dc125e1a4255ff9d3af03688d96b" }
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "tomtoolkit" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/50/ba/c8c752b2f17ca3bb84b4a89e4cec5aef20c74a79ac7328c3cfb438029d39/tom_jpl-0.3.0.tar.gz", hash = "sha256:085fd36f496ac7c1ac1b18b2d8b550d5a6cc12d52e3437e74f1c3a5084c89919", size = 58418, upload-time = "2026-09-10T17:51:18.335Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6c/1a/2db0b698c5cce145830273df8d6c528e039cf8a049eafcc8f86072179d7f/tom_jpl-0.3.0-py3-none-any.whl", hash = "sha256:5b726fb9a7044ca421bc0c4d142be73e442e824f563db8f6aaabbc537a882326", size = 69513, upload-time = "2026-09-10T17:51:17.116Z" },
 ]
 
 [[package]]

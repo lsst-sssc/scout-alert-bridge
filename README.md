@@ -96,10 +96,10 @@ export DB_HOST=localhost DB_PORT=5433 DB_PASSWORD=scout_bridge
 ./manage.py migrate && ./manage.py bootstrap_scout_query && ./manage.py test
 ```
 
-> **Note:** `tom_jpl`'s Scout support is still on the PR #23 branch
-> (`add-rubin-too-filter-fields`), where the old combined `ingest_scout` command was split
-> in review into `rundataquery` (ingest) + `updatescout` (reconcile/designations). Any
-> older notes referring to `ingest_scout --query-name ...` predate that split.
+> **Note:** the Scout support this relies on shipped in `tom-jpl` 0.3.0 (PyPI, 2026-09-10).
+> During review of TOMToolkit/tom_jpl#23 the old combined `ingest_scout` command was split
+> into `rundataquery` (ingest) + `updatescout` (reconcile/designations); any older notes
+> referring to `ingest_scout --query-name ...` predate that split.
 
 A full containerized poll cycle (build image, migrate, ingest, publish):
 
