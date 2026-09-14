@@ -22,6 +22,8 @@ QUERY_ID=$(./manage.py bootstrap_scout_query --print-id)
 ```
 
 Run every 10 minutes (deployed as a Kubernetes CronJob with `concurrencyPolicy: Forbid`).
+`docs/Deployment_prep.md` records what LCO's ArgoCD/kpt pattern expects from this repo and
+what still has to change here before the deploy repo exists.
 
 `rundataquery` (from `tom_dataservices`) identifies a saved query by **numeric id, not
 name**. That id is assigned per-database, so it differs between dev, staging and prod and
