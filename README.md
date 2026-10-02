@@ -100,7 +100,7 @@ export DB_HOST=localhost DB_PORT=5433 DB_PASSWORD=scout_bridge
 ```
 
 > **Note:** requires `tomtoolkit` 3.1 (settings are built on `tom_common.default_settings`,
-> which 3.1 made load-bearing by moving accounts onto django-allauth) and the Scout support
+> which 3.1 made required by moving accounts onto django-allauth) and the Scout support
 > that shipped in `tom-jpl` 0.3.0 (PyPI, 2026-09-10).
 > During review of TOMToolkit/tom_jpl#23 the old combined `ingest_scout` command was split
 > into `rundataquery` (ingest) + `updatescout` (reconcile/designations); any older notes
