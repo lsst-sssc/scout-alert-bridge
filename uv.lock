@@ -715,6 +715,25 @@ wheels = [
 ]
 
 [[package]]
+name = "django-allauth"
+version = "65.19.7"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "asgiref" },
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/c4/33/7c8f8fc85f4ee644ee3acb20c1fe4d04516298ab5903f812e1556b65f947/django_allauth-65.19.7.tar.gz", hash = "sha256:c7749551b659ca954e483f6f634cd0c262d65dd8144f5219b3a31cba0426e981", size = 2296178, upload-time = "2026-10-01T12:35:24.152Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/30/c4/a42cc4439b18b8d2767f8c54999e011b9f620a478806ed265baed7c3dc01/django_allauth-65.19.7-py3-none-any.whl", hash = "sha256:8899377f38afabf10445c9ee2f808a730304ca8aecc540657d51a8b3928283d6", size = 2076429, upload-time = "2026-10-01T12:35:20.844Z" },
+]
+
+[package.optional-dependencies]
+mfa = [
+    { name = "fido2" },
+    { name = "qrcode" },
+]
+
+[[package]]
 name = "django-bootstrap5"
 version = "26.2"
 source = { registry = "https://pypi.org/simple" }
@@ -936,6 +955,18 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/82/bf/4f669e10b6bc38a731ee3400aed1a1e2d0a3e3cf411e72f6b320d3af0eaf/fastavro-1.12.2-cp314-cp314t-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl", hash = "sha256:e367a84c9133018e0a3bc822abe78d7f1f9a6092991a0ec409468cf4ef260282", size = 3410900, upload-time = "2026-04-24T14:37:29.233Z" },
     { url = "https://files.pythonhosted.org/packages/10/39/ecb19fdae4158a7730b5963fbf1b6d38d74678392d73083be518642af0c1/fastavro-1.12.2-cp314-cp314t-musllinux_1_2_aarch64.whl", hash = "sha256:044fafca0853e9ae14009de7763ac9e8e8f8b96f8a4e90bd58b695443266a370", size = 3335637, upload-time = "2026-04-24T14:37:31.472Z" },
     { url = "https://files.pythonhosted.org/packages/32/f1/f21bd5319113e89ceceed2df840df21e9c5150d181db74b6ba80400f9f48/fastavro-1.12.2-cp314-cp314t-musllinux_1_2_x86_64.whl", hash = "sha256:afede7324822800e4f90e96b9514188a237a60f35e8e7a10b2129c10c78f6e4d", size = 3356664, upload-time = "2026-04-24T14:37:34.231Z" },
+]
+
+[[package]]
+name = "fido2"
+version = "2.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "cryptography" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/ba/ea/6f08c354b7aeb8019249d46a86c2153f8218499cced4d21bf16b6d49fc16/fido2-2.2.1.tar.gz", hash = "sha256:85787428a94c3f8eaf72f0ff30afba983b559a1b1b795c93318c81b4ad4062c4", size = 327147, upload-time = "2026-06-29T17:41:11.927Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/71/84/198d99c3312557ef6121cf78c38281efe9b3bc88cba0e2c05446f38a024d/fido2-2.2.1-py3-none-any.whl", hash = "sha256:ed397da981b9ab133da6ead7309e41f924b566b749956129efe286fae097749f", size = 238354, upload-time = "2026-06-29T17:41:09.921Z" },
 ]
 
 [[package]]
@@ -2019,6 +2050,18 @@ wheels = [
 ]
 
 [[package]]
+name = "qrcode"
+version = "8.2"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama", marker = "sys_platform == 'win32'" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/8f/b2/7fc2931bfae0af02d5f53b174e9cf701adbb35f39d69c2af63d4a39f81a9/qrcode-8.2.tar.gz", hash = "sha256:35c3f2a4172b33136ab9f6b3ef1c00260dd2f66f858f24d88418a015f446506c", size = 43317, upload-time = "2025-05-01T15:44:24.726Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/dd/b8/d2d6d731733f51684bbf76bf34dab3b70a9148e8f2cef2bb544fccec681a/qrcode-8.2-py3-none-any.whl", hash = "sha256:16e64e0716c14960108e85d853062c9e8bba5ca8252c0b4d0231b9df4060ff4f", size = 45986, upload-time = "2025-05-01T15:44:22.781Z" },
+]
+
+[[package]]
 name = "referencing"
 version = "0.37.0"
 source = { registry = "https://pypi.org/simple" }
@@ -2373,7 +2416,7 @@ requires-dist = [
     { name = "hop-client", specifier = ">=0.9" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3" },
     { name = "tom-jpl", specifier = ">=0.3.0" },
-    { name = "tomtoolkit", specifier = ">=3.0.1" },
+    { name = "tomtoolkit", specifier = ">=3.1.0,<3.2" },
 ]
 
 [package.metadata.requires-dev]
@@ -2509,7 +2552,7 @@ wheels = [
 
 [[package]]
 name = "tomtoolkit"
-version = "3.0.1"
+version = "3.1.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alerce" },
@@ -2520,6 +2563,7 @@ dependencies = [
     { name = "crispy-bootstrap5" },
     { name = "cryptography" },
     { name = "django" },
+    { name = "django-allauth", extra = ["mfa"] },
     { name = "django-bootstrap5" },
     { name = "django-contrib-comments" },
     { name = "django-crispy-forms" },
@@ -2541,9 +2585,9 @@ dependencies = [
     { name = "requests" },
     { name = "specutils" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/45/4b/d94fd2dd676a9ca2d942c32e2f5bb06c98c5d91c30893880b5c7619b5f91/tomtoolkit-3.0.1.tar.gz", hash = "sha256:7068f3e241c7377cf98a21d9a0f5d6819fbb3a399528c00404de3a373e2ad5b7", size = 14521149, upload-time = "2026-08-25T21:47:32.537Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3d/44/e1731c96c74510c3984059045b027469291af24e66ebe663fcff353efd85/tomtoolkit-3.1.0.tar.gz", hash = "sha256:022f15c27fe617f22133c586a10dedcd9731dd0eb867a8021e362978803d0db9", size = 14683024, upload-time = "2026-09-24T21:44:02.048Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c7/4c/a8227b8194e844c4a36425ef40200759692b27d23553114c6f02878b9dd5/tomtoolkit-3.0.1-py3-none-any.whl", hash = "sha256:5a119b46a0b837f4f801f182446e193089a045d6465cf60c72a02735cf024b62", size = 1531308, upload-time = "2026-08-25T21:47:29.922Z" },
+    { url = "https://files.pythonhosted.org/packages/6b/04/2ef3c813d64ee725d169983fb89ab8c2301bbb3af57f549312c0e861ff36/tomtoolkit-3.1.0-py3-none-any.whl", hash = "sha256:4d6deac3d7e3aa2a50a99cb0154e19c72cb3f682c29e8ec6ed2b0aca617acf42", size = 1588734, upload-time = "2026-09-24T21:43:59.951Z" },
 ]
 
 [[package]]

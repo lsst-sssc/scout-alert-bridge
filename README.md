@@ -4,7 +4,8 @@ Polls the [JPL Scout](https://cneos.jpl.nasa.gov/scout/) NEOCP hazard-assessment
 and publishes new / updated / cancelled **Rubin ToO candidate** NEO events as a Kafka
 stream (SCiMMA Hopskotch) for the Vera C. Rubin Observatory Target-of-Opportunity system.
 
-A headless [TOM Toolkit](https://tom-toolkit.readthedocs.io/) Django project:
+A [TOM Toolkit](https://tom-toolkit.readthedocs.io/) Django project run as scheduled
+management commands (nothing serves HTTP in production):
 [`tom_jpl`](https://github.com/TOMToolkit/tom_jpl) provides Scout ingestion and change
 reconciliation; the `scout_publisher` app applies the SSSC NEOs WG "Filter Criteria for
 NEO Rubin ToO Triggers" (v0.2) and publishes passing candidates through a transactional
@@ -98,7 +99,9 @@ export DB_HOST=localhost DB_PORT=5433 DB_PASSWORD=scout_bridge
 ./manage.py migrate && ./manage.py bootstrap_scout_query && ./manage.py test
 ```
 
-> **Note:** the Scout support this relies on shipped in `tom-jpl` 0.3.0 (PyPI, 2026-09-10).
+> **Note:** requires `tomtoolkit` 3.1 (settings are built on `tom_common.default_settings`,
+> which 3.1 made load-bearing by moving accounts onto django-allauth) and the Scout support
+> that shipped in `tom-jpl` 0.3.0 (PyPI, 2026-09-10).
 > During review of TOMToolkit/tom_jpl#23 the old combined `ingest_scout` command was split
 > into `rundataquery` (ingest) + `updatescout` (reconcile/designations); any older notes
 > referring to `ingest_scout --query-name ...` predate that split.

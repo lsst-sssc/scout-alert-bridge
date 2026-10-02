@@ -7,7 +7,7 @@ requires-python = ">=3.11"
 license = { text = "BSD-3-Clause" }
 authors = [{ name = "Tim Lister", email = "tlister@lco.global" }]
 dependencies = [
-    "tomtoolkit>=3.0.1",
+    "tomtoolkit>=3.1.0,<3.2",  # settings follow tom_common.default_settings; re-check on each minor
     "tom-jpl>=0.3.0",
     "hop-client>=0.9",
     "psycopg[binary]>=3",

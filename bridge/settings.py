@@ -1,14 +1,21 @@
 """Django settings for the scout-alert-bridge service.
 
-A headless TOM Toolkit project: Scout candidates are ingested via tom_dataservices'
-`rundataquery` (with a saved broad query) and reconciled/settled by `tom_jpl`'s
-`updatescout`; `scout_publisher` derives and publishes
-Rubin ToO candidate events to Kafka. The only web surface is the Django admin,
-used for operational inspection.
+A TOM Toolkit project run as scheduled management commands: Scout candidates are
+ingested via tom_dataservices' `rundataquery` (with a saved broad query) and
+reconciled/settled by `tom_jpl`'s `updatescout`; `scout_publisher` derives and publishes
+Rubin ToO candidate events to Kafka. Nothing serves HTTP in production; the standard TOM
+pages and the Django admin are mounted (see bridge/urls.py) and double as a local
+inspection surface.
+
+Apps, middleware and authentication backends come from `tom_common.default_settings`
+(the tomtoolkit >= 3.1 contract): 3.1 moved accounts onto django-allauth, and tom_common
+imports it at startup, so a hand-maintained INSTALLED_APPS no longer boots.
 """
 
 import os
 from pathlib import Path
+
+from tom_common.default_settings import *  # noqa: F401, F403
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -16,48 +23,14 @@ SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-only-insecure-secret-key')
 DEBUG = os.environ.get('DEBUG', 'false').lower() == 'true'
 ALLOWED_HOSTS = os.environ.get('ALLOWED_HOSTS', '*').split(',')
 
-INSTALLED_APPS = [
-    'django.contrib.admin',
-    'django.contrib.auth',
-    'django.contrib.contenttypes',
-    'django.contrib.sessions',
-    'django.contrib.messages',
-    'django.contrib.staticfiles',
-    'django.contrib.sites',
-    'django_tasks',
-    'django_tasks.backends.database',
-    'guardian',
-    'tom_common',
-    'django_comments',
-    'django_bootstrap5',
-    'crispy_bootstrap5',
-    'crispy_forms',
-    'rest_framework',
-    'rest_framework.authtoken',
-    'django_filters',
-    'django_tables2',
-    'django_gravatar',
-    'django_htmx',
-    'tom_targets',
-    'tom_alerts',
-    'tom_observations',
-    'tom_dataproducts',
-    'tom_dataservices',
+INSTALLED_APPS = TOMTOOLKIT_INSTALLED_APPS + [  # noqa: F405
     'tom_jpl',
     'scout_publisher',
 ]
 
 SITE_ID = 1
 
-MIDDLEWARE = [
-    'django.middleware.security.SecurityMiddleware',
-    'django.contrib.sessions.middleware.SessionMiddleware',
-    'django.middleware.common.CommonMiddleware',
-    'django.middleware.csrf.CsrfViewMiddleware',
-    'django.contrib.auth.middleware.AuthenticationMiddleware',
-    'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
-]
+MIDDLEWARE = TOMTOOLKIT_MIDDLEWARE  # noqa: F405
 
 ROOT_URLCONF = 'bridge.urls'
 
@@ -100,10 +73,7 @@ else:
         }
     }
 
-AUTHENTICATION_BACKENDS = (
-    'django.contrib.auth.backends.ModelBackend',
-    'guardian.backends.ObjectPermissionBackend',
-)
+AUTHENTICATION_BACKENDS = TOMTOOLKIT_AUTHENTICATION_BACKENDS  # noqa: F405
 
 LANGUAGE_CODE = 'en-us'
 TIME_ZONE = 'UTC'
@@ -136,7 +106,6 @@ HOOKS = {
     'multiple_data_products_post_save': 'tom_dataproducts.hooks.multiple_data_products_post_save',
 }
 TOM_FACILITY_CLASSES = []
-TOM_ALERT_CLASSES = []
 DATA_PRODUCT_TYPES = {
     'photometry': ('photometry', 'Photometry'),
     'spectroscopy': ('spectroscopy', 'Spectroscopy'),

@@ -1,8 +1,8 @@
 # Runbook: checking the bridge is working, and debugging it when it isn't
 
-Everything here is command-line; the project is headless by design (the Django admin at
-`/admin/` exists for inspection but nothing serves it in production, where the bridge is a
-CronJob that runs and exits).
+Everything here is command-line; nothing serves HTTP in production, where the bridge is a
+CronJob that runs and exits. The TOM pages and Django admin are mounted (tomtoolkit 3.1
+needs them to boot) and can be served locally with `runserver` for inspection.
 
 ## Setup
 
